@@ -1,0 +1,95 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Expense Splitter with Settlement</title>
+    <style>
+        body { font-family: Arial; margin: 20px; }
+        input { margin: 5px; }
+        .result { margin-top: 15px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h2>Expense Sharing Calculator</h2>
+    
+    <label>Number of Members: </label>
+    <input type="number" id="members" placeholder="Enter number of members"><br>
+    
+    <div id="inputs"></div>
+    
+    <button onclick="generateInputs()">Generate Member Inputs</button>
+    <button onclick="calculate()">Calculate</button>
+    
+    <div class="result" id="result"></div>
+    
+    <script>
+        function generateInputs() {
+            const members = document.getElementById('members').value;
+            const container = document.getElementById('inputs');
+            container.innerHTML = '';
+            for (let i = 0; i < members; i++) {
+                container.innerHTML += `
+                    <input type="text" id="name${i}" placeholder="Name ${i+1}">
+                    <input type="number" id="member${i}" placeholder="Contribution"><br>
+                `;
+            }
+        }
+
+        function calculate() {
+            const members = parseInt(document.getElementById('members').value);
+            let contributions = [];
+            let names = [];
+            let total = 0;
+            
+            for (let i = 0; i < members; i++) {
+                names.push(document.getElementById(`name${i}`).value || `Member ${i+1}`);
+                const amount = parseFloat(document.getElementById(`member${i}`).value) || 0;
+                contributions.push(amount);
+                total += amount;
+            }
+
+            const share = total / members;
+            let balances = contributions.map(amount => amount - share);
+
+            let resultText = `Total Expense: $${total.toFixed(2)}<br>`;
+            resultText += `Each member should pay: $${share.toFixed(2)}<br><br>`;
+
+            // Show individual status
+            balances.forEach((balance, i) => {
+                if (balance > 0) {
+                    resultText += `${names[i]} should RECEIVE $${balance.toFixed(2)}<br>`;
+                } else if (balance < 0) {
+                    resultText += `${names[i]} should PAY $${Math.abs(balance).toFixed(2)}<br>`;
+                } else {
+                    resultText += `${names[i]} is settled.<br>`;
+                }
+            });
+
+            // Settlement plan
+            resultText += `<br><strong>Settlement Plan:</strong><br>`;
+            let payers = [];
+            let receivers = [];
+
+            balances.forEach((balance, i) => {
+                if (balance < 0) payers.push({ name: names[i], amount: Math.abs(balance) });
+                if (balance > 0) receivers.push({ name: names[i], amount: balance });
+            });
+
+            // Match payers to receivers
+            for (let p of payers) {
+                for (let r of receivers) {
+                    if (p.amount === 0) break;
+                    if (r.amount === 0) continue;
+
+                    let transfer = Math.min(p.amount, r.amount);
+                    resultText += `${p.name} pays ${r.name} $${transfer.toFixed(2)}<br>`;
+                    p.amount -= transfer;
+                    r.amount -= transfer;
+                }
+            }
+
+            document.getElementById('result').innerHTML = resultText;
+        }
+    </script>
+</body>
+</html>
