@@ -4,25 +4,111 @@
 <head>
     <title>Expense Splitter with Settlement</title>
     <style>
-        body { font-family: Arial; margin: 20px; }
-        input { margin: 5px; }
-        .result { margin-top: 15px; font-weight: bold; }
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #6a11cb, #2575fc);
+            color: #fff;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+        }
+
+        label {
+            font-size: 16px;
+        }
+
+        input {
+            margin: 8px 0;
+            padding: 10px;
+            width: calc(50% - 12px);
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        input[type="number"], input[type="text"] {
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+        }
+
+        button {
+            margin: 10px 5px;
+            padding: 12px 18px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: #ff6a00;
+            color: #fff;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background: #ff8c42;
+            transform: scale(1.05);
+        }
+
+        .result {
+            margin-top: 20px;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: bold;
+            color: #fff;
+            line-height: 1.6;
+        }
+
+        .inputs-container input {
+            display: inline-block;
+            margin-right: 8px;
+        }
     </style>
 </head>
 <body>
     <h2>Expense Sharing Calculator</h2>
-    
-    <label>Number of Members: </label>
-    <input type="number" id="members" placeholder="Enter number of members"><br>
-    
-    <div id="inputs"></div>
-    
-    <button onclick="generateInputs()">Generate Member Inputs</button>
-    <button onclick="calculate()">Calculate</button>
-    
-    <div class="result" id="result"></div>
-    
+    <div class="container">
+        <label>Number of Members: </label>
+        <input type="number" id="members" placeholder="Enter number of members"><br>
+        
+        <div id="inputs" class="inputs-container"></div>
+        
+        <button onclick="generateInputs()">Generate Member Inputs</button>
+        <button onclick="calculate()">Calculate</button>
+        <button onclick="clearData()">Clear Data</button>
+        
+        <div class="result" id="result"></div>
+    </div>
+
     <script>
+        window.onload = function() {
+            const savedMembers = localStorage.getItem('members');
+            if (savedMembers) {
+                document.getElementById('members').value = savedMembers;
+                generateInputs();
+                const savedNames = JSON.parse(localStorage.getItem('names') || '[]');
+                const savedContributions = JSON.parse(localStorage.getItem('contributions') || '[]');
+                for (let i = 0; i < savedMembers; i++) {
+                    if (savedNames[i]) document.getElementById(`name${i}`).value = savedNames[i];
+                    if (savedContributions[i]) document.getElementById(`member${i}`).value = savedContributions[i];
+                }
+            }
+        };
+
         function generateInputs() {
             const members = document.getElementById('members').value;
             const container = document.getElementById('inputs');
@@ -42,11 +128,16 @@
             let total = 0;
             
             for (let i = 0; i < members; i++) {
-                names.push(document.getElementById(`name${i}`).value || `Member ${i+1}`);
+                const name = document.getElementById(`name${i}`).value || `Member ${i+1}`;
                 const amount = parseFloat(document.getElementById(`member${i}`).value) || 0;
+                names.push(name);
                 contributions.push(amount);
                 total += amount;
             }
+
+            localStorage.setItem('members', members);
+            localStorage.setItem('names', JSON.stringify(names));
+            localStorage.setItem('contributions', JSON.stringify(contributions));
 
             const share = total / members;
             let balances = contributions.map(amount => amount - share);
@@ -54,7 +145,6 @@
             let resultText = `Total Expense: $${total.toFixed(2)}<br>`;
             resultText += `Each member should pay: $${share.toFixed(2)}<br><br>`;
 
-            // Show individual status
             balances.forEach((balance, i) => {
                 if (balance > 0) {
                     resultText += `${names[i]} should RECEIVE $${balance.toFixed(2)}<br>`;
@@ -65,7 +155,6 @@
                 }
             });
 
-            // Settlement plan
             resultText += `<br><strong>Settlement Plan:</strong><br>`;
             let payers = [];
             let receivers = [];
@@ -75,7 +164,6 @@
                 if (balance > 0) receivers.push({ name: names[i], amount: balance });
             });
 
-            // Match payers to receivers
             for (let p of payers) {
                 for (let r of receivers) {
                     if (p.amount === 0) break;
@@ -89,6 +177,14 @@
             }
 
             document.getElementById('result').innerHTML = resultText;
+        }
+
+        function clearData() {
+            localStorage.clear();
+            document.getElementById('members').value = '';
+            document.getElementById('inputs').innerHTML = '';
+            document.getElementById('result').innerHTML = '';
+            alert('All data cleared!');
         }
     </script>
 </body>
